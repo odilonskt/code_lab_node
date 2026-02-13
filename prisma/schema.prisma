@@ -1,0 +1,89 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+
+model Usuario {
+  id        String  @id @default(cuid())
+  nome      String
+  email     String  @unique
+  perfil    PerfilUsuario
+
+  ativo     Boolean @default(true)
+
+  criadoEm  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  movimentacoes MovimentacaoEstoque[]
+}
+
+model Produto {
+  id              String  @id @default(cuid())
+  nome            String
+  descricao       String?
+  categoria       String?
+  quantidadeAtual Int     @default(0)
+  status          StatusProduto
+
+  ativo           Boolean @default(true)
+
+  criadoEm  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  movimentacoes MovimentacaoEstoque[]
+}
+
+model MovimentacaoEstoque {
+  id         String @id @default(cuid())
+
+  produtoId String
+  usuarioId String
+
+  tipo       TipoMovimentacao
+  quantidade Int
+  dataHora   DateTime @default(now())
+
+  motivo     String?
+  observacao String?
+
+  produto Produto @relation(fields: [produtoId], references: [id], onDelete: Restrict)
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  criadoEm  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([produtoId])
+  @@index([usuarioId])
+  @@index([dataHora])
+
+  @@map("movimentacoes_estoque")
+}
+
+enum TipoMovimentacao {
+  ENTRADA
+  SAIDA
+  AJUSTE
+}
+
+enum StatusProduto {
+  ATIVO
+  INATIVO
+  EM_MANUTENCAO
+}
+
+enum PerfilUsuario {
+  ADMIN
+  OPERADOR
+}
