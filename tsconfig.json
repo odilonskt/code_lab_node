@@ -1,0 +1,48 @@
+{
+  "compilerOptions": {
+    // Environment: Node.js com ES Modules
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],
+    "types": ["node"],
+
+    // Diretórios de entrada e saída
+    "rootDir": "./src",
+    "outDir": "./dist",
+
+    // Path alias para Prisma
+    "baseUrl": ".",
+    "paths": {
+      "@prisma/client": ["./generated/prisma/index.d.ts"]
+    },
+
+    // Geração de source maps e declarações
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+
+    // Strict mode
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    // "exactOptionalPropertyTypes": true,
+
+    // Opções recomendadas para ES Modules
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noUncheckedSideEffectImports": true,
+    "paths": {
+      "@prisma/client": ["./generated/prisma"],
+      "@generated/*": ["./generated/*"]
+    },
+    // Ignorar verificação de tipos em bibliotecas
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"],
+  "watch": ["src"],
+  "ext": "ts,json",
+  "ignore": ["src/**/*.spec.ts"],
+  "exec": "node --loader ts-node/esm src/index.ts"
+}

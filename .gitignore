@@ -1,0 +1,19 @@
+node_modules
+# Keep environment variables out of version control
+.env
+
+/generated/prisma
+
+
+
+
+/src/generated/prisma
+.env
+node_modules
+dist
+build
+coverage
+logs
+*.log
+*.tsbuildinfo       
+/prisma/generated/prisma
