@@ -248,7 +248,7 @@ router.put("/:id", produtoController.update.bind(produtoController));
  *       204:
  *         description: Produto removido/desativado com sucesso (sem conteúdo)
  *       400:
- *         description: Erro (ex.: produto não encontrado)
+ *        description: "Erro (ex.: produto não encontrado)"
  */
 router.delete("/:id", produtoController.delete.bind(produtoController));
 
