@@ -1,5 +1,6 @@
 import type {
   MovimentacaoEstoque,
+  Prisma,
   TipoMovimentacao,
 } from "../../generated/prisma/index.js";
 import { prisma } from "../lib/prisma.js";
@@ -62,46 +63,48 @@ export class MovimentacaoService {
     }
 
     // Criar movimentação e atualizar estoque em transação
-    const result = await prisma.$transaction(async (tx) => {
-      // Calcular nova quantidade
-      let novaQuantidade = produto.quantidadeAtual;
+    const result = await prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        // Calcular nova quantidade
+        let novaQuantidade = produto.quantidadeAtual;
 
-      switch (data.tipo) {
-        case "ENTRADA":
-          novaQuantidade += data.quantidade;
-          break;
-        case "SAIDA":
-          novaQuantidade -= data.quantidade;
-          break;
-        case "AJUSTE":
-          novaQuantidade = data.quantidade;
-          break;
-      }
+        switch (data.tipo) {
+          case "ENTRADA":
+            novaQuantidade += data.quantidade;
+            break;
+          case "SAIDA":
+            novaQuantidade -= data.quantidade;
+            break;
+          case "AJUSTE":
+            novaQuantidade = data.quantidade;
+            break;
+        }
 
-      // Atualizar produto
-      await tx.produto.update({
-        where: { id: data.produtoId },
-        data: { quantidadeAtual: novaQuantidade },
-      });
+        // Atualizar produto
+        await tx.produto.update({
+          where: { id: data.produtoId },
+          data: { quantidadeAtual: novaQuantidade },
+        });
 
-      // Criar movimentação
-      return tx.movimentacaoEstoque.create({
-        data: {
-          produtoId: data.produtoId,
-          usuarioId: data.usuarioId,
-          tipo: data.tipo,
-          quantidade: data.quantidade,
-          motivo: data.motivo,
-          observacao: data.observacao,
-        },
-        include: {
-          produto: true,
-          usuario: {
-            select: { id: true, nome: true, email: true, perfil: true },
+        // Criar movimentação
+        return tx.movimentacaoEstoque.create({
+          data: {
+            produtoId: data.produtoId,
+            usuarioId: data.usuarioId,
+            tipo: data.tipo,
+            quantidade: data.quantidade,
+            motivo: data.motivo,
+            observacao: data.observacao,
           },
-        },
-      });
-    });
+          include: {
+            produto: true,
+            usuario: {
+              select: { id: true, nome: true, email: true, perfil: true },
+            },
+          },
+        });
+      },
+    );
 
     return result;
   }
