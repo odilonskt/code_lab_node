@@ -5,10 +5,25 @@ import { usuarioService } from "../services/usuario.service.js";
 export class UsuarioController {
   async create(req: Request, res: Response): Promise<void> {
     try {
-      const usuario = await usuarioService.crate(req.body);
+      const { nome, email, password, perfil } = req.body;
+
+      if (!nome || !email || !password || !perfil) {
+        res
+          .status(400)
+          .json({ error: "Nome,email,senha e perfil são obrigatórios" });
+        return;
+      }
+
+      const usuario = await usuarioService.crate({
+        nome,
+        email,
+        password,
+        perfil,
+      });
+      const { password: _, ...usuarioSemSenha } = usuario;
       res.status(201).json({
         success: true,
-        data: usuario,
+        data: usuarioSemSenha,
       });
     } catch (error) {
       if (error instanceof Error) {
