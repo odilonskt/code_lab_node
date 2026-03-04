@@ -1,6 +1,7 @@
 import type {
   MovimentacaoEstoque,
   Prisma,
+  Produto,
   TipoMovimentacao,
 } from "../../generated/prisma/index.js";
 import { prisma } from "../lib/prisma.js";
@@ -159,7 +160,7 @@ export class MovimentacaoService {
   }
 
   async getRelatorioEstoque(): Promise<any> {
-    const produtos = await prisma.produto.findMany({
+    const produtos = (await prisma.produto.findMany({
       where: { ativo: true },
       select: {
         id: true,
@@ -172,17 +173,29 @@ export class MovimentacaoService {
           take: 1,
         },
       },
-    });
+    })) as (Pick<
+      Produto,
+      "id" | "nome" | "categoria" | "quantidadeAtual" | "status"
+    > & { movimentacoes: any[] })[];
 
     const totalProdutos = produtos.length;
-    const totalItens = produtos.reduce((acc, p) => acc + p.quantidadeAtual, 0);
+    const totalItens = produtos.reduce(
+      (acc: number, p: (typeof produtos)[0]) => acc + p.quantidadeAtual,
+      0,
+    );
     const produtosBaixoEstoque = produtos.filter(
-      (p) => p.quantidadeAtual < 10,
+      (p: (typeof produtos)[0]) => p.quantidadeAtual < 10,
     ).length;
 
     // Estatísticas por categoria
     const estatisticas = produtos.reduce(
-      (acc, produto) => {
+      (
+        acc: Record<
+          string,
+          { total: number; quantidade: number; produtos: number }
+        >,
+        produto: (typeof produtos)[0],
+      ) => {
         const categoria = produto.categoria || "Sem categoria";
         if (!acc[categoria]) {
           acc[categoria] = {
@@ -196,7 +209,10 @@ export class MovimentacaoService {
         acc[categoria].produtos++;
         return acc;
       },
-      {} as Record<string, any>,
+      {} as Record<
+        string,
+        { total: number; quantidade: number; produtos: number }
+      >,
     );
 
     return {
