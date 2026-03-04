@@ -20,6 +20,14 @@ const options = {
       },
     },
   },
+  // dentro de components, adicione:
+  securitySchemes: {
+    bearerAuth: {
+      type: "http",
+      scheme: "bearer",
+      bearerFormat: "JWT",
+    },
+  },
   // Caminhos para os arquivos que contêm as anotações JSDoc
   apis: [
     "./src/router/*.ts", // rotas
