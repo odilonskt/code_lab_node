@@ -20,13 +20,14 @@ model Usuario {
   nome      String
   email     String  @unique
   perfil    PerfilUsuario
-
+password  String
   ativo     Boolean @default(true)
 
-  criadoEm  DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  criadoEm  DateTime @default(now()) @map("criado_em")
+  updatedAt DateTime @updatedAt  @map("updated_at")
 
   movimentacoes MovimentacaoEstoque[]
+  @@map("usuarios")
 }
 
 model Produto {
