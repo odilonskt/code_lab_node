@@ -1,9 +1,11 @@
+import bcrypt from "bcrypt";
 import type { PerfilUsuario, Usuario } from "../../generated/prisma/index.js";
 import { prisma } from "../lib/prisma.js";
 
 export interface ICreateUsuarioDTO {
   nome: string;
   email: string;
+  password: string;
   perfil: PerfilUsuario;
 }
 
@@ -26,10 +28,14 @@ export class UsuarioService {
     if (existingUser) {
       throw new Error("Email já está em uso");
     }
+    const hashedPassword = await bcrypt.hash(data.password, 10);
 
     return prisma.usuario.create({
       data: {
-        ...data,
+        nome: data.nome,
+        email: data.email,
+        password: hashedPassword,
+        perfil: data.perfil,
         ativo: true,
       },
     });
