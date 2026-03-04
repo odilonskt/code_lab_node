@@ -13,6 +13,10 @@ const options = {
         url: "http://localhost:3333",
         description: "Servidor de desenvolvimento",
       },
+      {
+        url: "https://code-lab-node.onrender.com/",
+        description: "Deploy",
+      },
     ],
     components: {
       schemas: {
