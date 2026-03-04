@@ -3,10 +3,11 @@ import type { Request, Response } from "express";
 import express from "express";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger.js"; // ajuste o caminho
+import authRoutes from "./router/auth.route.js";
+import dashboardRoutes from "./router/dashboard.route.js";
 import movimentacaoRoutes from "./router/movimentacao.route.js";
 import produtoRoutes from "./router/produto.route.js";
 import usuarioRoutes from "./router/usuario.route.js";
-
 const app = express();
 
 app.use(cors());
@@ -15,10 +16,12 @@ app.use(express.json());
 // Rota da documentação Swagger
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+app.use("/api/auth", authRoutes);
 // Rotas da API
 app.use("/api/produtos", produtoRoutes);
 app.use("/api/usuarios", usuarioRoutes);
 app.use("/api/movimentacoes", movimentacaoRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 app.get("/", (req: Request, res: Response) => {
   return res.json({
