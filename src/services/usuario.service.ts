@@ -17,6 +17,12 @@ export interface IUpdateUsuarioDTO {
   ativo?: boolean;
 }
 
+export interface IUpdateProfileDTO {
+  nome?: string;
+  email?: string;
+  password?: string;
+}
+
 export class UsuarioService {
   async crate(data: ICreateUsuarioDTO): Promise<Usuario> {
     const existingUser = await prisma.usuario.findUnique({
@@ -135,6 +141,48 @@ export class UsuarioService {
     return prisma.usuario.delete({
       where: { id },
     });
+  }
+
+  async updateProfile(
+    userId: string,
+    data: IUpdateProfileDTO,
+  ): Promise<Omit<Usuario, "password">> {
+    const existingUser = await prisma.usuario.findUnique({
+      where: { id: userId },
+    });
+
+    if (!existingUser) {
+      throw new Error("Usuário não encontrado");
+    }
+
+    // Verificar se o email está sendo alterado e se já está em uso
+    if (data.email && data.email !== existingUser.email) {
+      const emailExists = await prisma.usuario.findUnique({
+        where: { email: data.email },
+      });
+
+      if (emailExists) {
+        throw new Error("Email já está em uso");
+      }
+    }
+
+    // Preparar dados para atualização
+    const updateData: Partial<Usuario> = {};
+
+    if (data.nome) updateData.nome = data.nome;
+    if (data.email) updateData.email = data.email;
+    if (data.password) {
+      updateData.password = await bcrypt.hash(data.password, 10);
+    }
+
+    const updatedUser = await prisma.usuario.update({
+      where: { id: userId },
+      data: updateData,
+    });
+
+    // Retornar sem a senha
+    const { password: _, ...userWithoutPassword } = updatedUser;
+    return userWithoutPassword;
   }
 }
 export const usuarioService = new UsuarioService();

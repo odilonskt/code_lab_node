@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import type { PerfilUsuario } from "../../generated/prisma/index.js";
+import type { AuthRequest } from "../middleware/auth.js";
 import { usuarioService } from "../services/usuario.service.js";
 
 export class UsuarioController {
@@ -123,6 +124,45 @@ export class UsuarioController {
 
       await usuarioService.delete(id);
       res.status(204).send();
+    } catch (error) {
+      if (error instanceof Error) {
+        res.status(400).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "Erro interno do servidor" });
+      }
+    }
+  }
+
+  async updateProfile(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ error: "Não autenticado" });
+        return;
+      }
+
+      const { nome, email, password } = req.body;
+
+      // Verificar se pelo menos um campo foi fornecido
+      if (!nome && !email && !password) {
+        res.status(400).json({
+          error:
+            "Pelo menos um campo (nome, email ou password) deve ser fornecido",
+        });
+        return;
+      }
+
+      const usuario = await usuarioService.updateProfile(userId, {
+        nome,
+        email,
+        password,
+      });
+
+      res.json({
+        success: true,
+        data: usuario,
+      });
     } catch (error) {
       if (error instanceof Error) {
         res.status(400).json({ error: error.message });
