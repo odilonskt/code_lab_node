@@ -1,5 +1,12 @@
 import { Router } from "express";
 import { produtoController } from "../controller/produto.controller.js";
+import { authenticate } from "../middleware/auth.js";
+import { validate, validateQuery } from "../middleware/validate.js";
+import {
+  createProdutoSchema,
+  listProdutoQuerySchema,
+  updateProdutoSchema,
+} from "../schemas/produto.schema.js";
 
 const router = Router();
 
@@ -7,76 +14,7 @@ const router = Router();
  * @swagger
  * tags:
  *   name: Produtos
- *   description: Gerenciamento de produtos
- */
-
-/**
- * @swagger
- * components:
- *   schemas:
- *     Produto:
- *       type: object
- *       required:
- *         - nome
- *         - status
- *       properties:
- *         id:
- *           type: string
- *           description: ID auto-gerado do produto
- *         nome:
- *           type: string
- *         descricao:
- *           type: string
- *         categoria:
- *           type: string
- *         quantidadeAtual:
- *           type: integer
- *           default: 0
- *         status:
- *           type: string
- *           enum: [ATIVO, INATIVO, EM_MANUTENCAO]
- *         ativo:
- *           type: boolean
- *           default: true
- *         criadoEm:
- *           type: string
- *           format: date-time
- *         updatedAt:
- *           type: string
- *           format: date-time
- *     CreateProdutoDTO:
- *       type: object
- *       required:
- *         - nome
- *         - status
- *       properties:
- *         nome:
- *           type: string
- *         descricao:
- *           type: string
- *         categoria:
- *           type: string
- *         quantidadeAtual:
- *           type: integer
- *         status:
- *           type: string
- *           enum: [ATIVO, INATIVO, EM_MANUTENCAO]
- *     UpdateProdutoDTO:
- *       type: object
- *       properties:
- *         nome:
- *           type: string
- *         descricao:
- *           type: string
- *         categoria:
- *           type: string
- *         quantidadeAtual:
- *           type: integer
- *         status:
- *           type: string
- *           enum: [ATIVO, INATIVO, EM_MANUTENCAO]
- *         ativo:
- *           type: boolean
+ *   description: Gerenciamento de produtos do estoque
  */
 
 /**
@@ -84,46 +22,77 @@ const router = Router();
  * /api/produtos:
  *   post:
  *     summary: Cria um novo produto
+ *     description: Adiciona um novo produto ao estoque
  *     tags: [Produtos]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/CreateProdutoDTO'
+ *           example:
+ *             nome: "Notebook Dell Inspiron 15"
+ *             descricao: "Notebook Dell Inspiron 15 5000"
+ *             categoria: "Eletrônicos"
+ *             quantidadeAtual: 50
+ *             quantidadeMinima: 10
+ *             status: "ATIVO"
  *     responses:
  *       201:
  *         description: Produto criado com sucesso
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   $ref: '#/components/schemas/Produto'
+ *               $ref: '#/components/schemas/ApiResponse'
  *       400:
- *         description: Erro de validação
+ *         description: Dados inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Não autenticado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Unauthorized'
+ *       403:
+ *         description: Acesso negado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Forbidden'
  */
-router.post("/", produtoController.create.bind(produtoController));
+router.post(
+  "/",
+  authenticate,
+  validate(createProdutoSchema),
+  produtoController.create.bind(produtoController),
+);
 
 /**
  * @swagger
  * /api/produtos:
  *   get:
  *     summary: Lista todos os produtos com filtros opcionais
+ *     description: Retorna uma lista paginada de produtos com opções de filtragem
  *     tags: [Produtos]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: skip
  *         schema:
  *           type: integer
+ *           default: 0
  *         description: Número de registros para pular (paginação)
  *       - in: query
  *         name: take
  *         schema:
  *           type: integer
+ *           default: 10
  *         description: Número de registros para retornar (paginação)
  *       - in: query
  *         name: categoria
@@ -152,23 +121,30 @@ router.post("/", produtoController.create.bind(produtoController));
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Produto'
+ *               $ref: '#/components/schemas/PaginatedResponse'
+ *       401:
+ *         description: Não autenticado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Unauthorized'
  */
-router.get("/", produtoController.list.bind(produtoController));
+router.get(
+  "/",
+  authenticate,
+  validateQuery(listProdutoQuerySchema),
+  produtoController.list.bind(produtoController),
+);
 
 /**
  * @swagger
  * /api/produtos/{id}:
  *   get:
  *     summary: Retorna um produto pelo ID
+ *     description: Busca os dados de um produto específico
  *     tags: [Produtos]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -182,23 +158,35 @@ router.get("/", produtoController.list.bind(produtoController));
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   $ref: '#/components/schemas/Produto'
+ *               $ref: '#/components/schemas/ApiResponse'
  *       404:
  *         description: Produto não encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/NotFound'
+ *       401:
+ *         description: Não autenticado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Unauthorized'
  */
-router.get("/:id", produtoController.getById.bind(produtoController));
+router.get(
+  "/:id",
+  authenticate,
+  produtoController.getById.bind(produtoController),
+);
 
 /**
  * @swagger
  * /api/produtos/{id}:
  *   put:
  *     summary: Atualiza um produto existente
+ *     description: Atualiza os dados de um produto do estoque
  *     tags: [Produtos]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -212,31 +200,56 @@ router.get("/:id", produtoController.getById.bind(produtoController));
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/UpdateProdutoDTO'
+ *           example:
+ *             nome: "Notebook Dell Atualizado"
+ *             descricao: "Notebook Dell Inspiron 15 5000"
+ *             categoria: "Eletrônicos"
+ *             quantidadeAtual: 75
+ *             quantidadeMinima: 15
+ *             status: "ATIVO"
+ *             ativo: true
  *     responses:
  *       200:
- *         description: Produto atualizado
+ *         description: Produto atualizado com sucesso
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   $ref: '#/components/schemas/Produto'
+ *               $ref: '#/components/schemas/ApiResponse'
  *       400:
- *         description: Erro de validação
+ *         description: Dados inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: Produto não encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/NotFound'
+ *       401:
+ *         description: Não autenticado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Unauthorized'
  */
-router.put("/:id", produtoController.update.bind(produtoController));
+router.put(
+  "/:id",
+  authenticate,
+  validate(updateProdutoSchema),
+  produtoController.update.bind(produtoController),
+);
 
 /**
  * @swagger
  * /api/produtos/{id}:
  *   delete:
- *     summary: Remove (ou desativa) um produto
+ *     summary: Remove (desativa) um produto
+ *     description: Desativa um produto do sistema (soft delete)
  *     tags: [Produtos]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -246,10 +259,30 @@ router.put("/:id", produtoController.update.bind(produtoController));
  *         description: ID do produto
  *     responses:
  *       204:
- *         description: Produto removido/desativado com sucesso (sem conteúdo)
+ *         description: Produto desativado com sucesso
  *       400:
- *        description: "Erro (ex.: produto não encontrado)"
+ *         description: Erro ao desativar produto
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Não autenticado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Unauthorized'
+ *       403:
+ *         description: Acesso negado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Forbidden'
  */
-router.delete("/:id", produtoController.delete.bind(produtoController));
+router.delete(
+  "/:id",
+  authenticate,
+  produtoController.delete.bind(produtoController),
+);
 
 export default router;
