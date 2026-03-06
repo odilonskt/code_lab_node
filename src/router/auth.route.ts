@@ -19,6 +19,56 @@ const router = Router();
 
 /**
  * @swagger
+ * /api/auth/register-first-admin:
+ *   post:
+ *     summary: Cria o primeiro administrador do sistema
+ *     description: Endpoint especial para criar o primeiro admin. Apenas funciona quando não existe nenhum admin no sistema.
+ *     tags: [Autenticação]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - nome
+ *               - email
+ *               - password
+ *             properties:
+ *               nome:
+ *                 type: string
+ *                 example: "Administrador Principal"
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "admin@exemplo.com"
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 6
+ *                 example: "senhaAdmin123"
+ *     responses:
+ *       201:
+ *         description: Administrador criado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
+ *       400:
+ *         description: Já existe admin ou dados inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post(
+  "/register-first-admin",
+  validate(registerSchema),
+  authController.registerFirstAdmin.bind(authController),
+);
+
+/**
+ * @swagger
  * /api/auth/register:
  *   post:
  *     summary: Registra um novo usuário
